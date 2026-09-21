@@ -6,19 +6,21 @@ const mongoose = require('mongoose');
 
 const app = express();
 
+// CORS Settings for Vercel & Local testing
 app.use(cors({ origin: '*', credentials: true }));
 app.use(express.json());
 
-// Root Health Check Route
+// Health Check Route (Render check karne ke liye)
 app.get('/', (req, res) => {
-    res.status(200).send('✅ Skovio Backend is Active');
+    res.status(200).send('✅ Skovio Backend is Live and Running');
 });
 
 // MongoDB Connection
 mongoose.connect(process.env.MONGO_URI || 'mongodb://localhost:27017/skovio')
     .then(() => console.log('✅ Connected to MongoDB Database'))
-    .catch((err) => console.log('⚠️ MongoDB Connection Note:', err.message));
+    .catch((err) => console.log('⚠️ MongoDB Connection Error:', err.message));
 
+// User Schema with OTP persistence
 const userSchema = new mongoose.Schema({
     fullName: { type: String, required: true },
     email: { type: String, required: true, unique: true, lowercase: true, trim: true },
@@ -30,7 +32,7 @@ const userSchema = new mongoose.Schema({
 
 const User = mongoose.model('User', userSchema);
 
-// Transporter Setup
+// Nodemailer Transporter Setup
 const transporter = nodemailer.createTransport({
     service: 'gmail',
     auth: {
@@ -39,15 +41,15 @@ const transporter = nodemailer.createTransport({
     }
 });
 
-// Helper Function: Send OTP
+// Helper Function: Send & Save OTP to MongoDB
 const handleSendOtp = async (email, fullName, res, subjectText, userDoc) => {
     const formattedEmail = email.toLowerCase().trim();
     const generatedOtp = Math.floor(100000 + Math.random() * 900000).toString();
-    const otpExpires = new Date(Date.now() + 10 * 60 * 1000); // 10 Min Expiry
+    const otpExpires = new Date(Date.now() + 10 * 60 * 1000); // 10 Minutes Expiry
 
     console.log(`\n🔑 OTP FOR ${formattedEmail}: ${generatedOtp}\n`);
 
-    // Save OTP to DB directly
+    // Save OTP to MongoDB directly
     if (userDoc) {
         userDoc.otp = generatedOtp;
         userDoc.otpExpires = otpExpires;
@@ -58,15 +60,15 @@ const handleSendOtp = async (email, fullName, res, subjectText, userDoc) => {
         from: process.env.EMAIL_USER,
         to: formattedEmail,
         subject: subjectText,
-        text: `Hello ${fullName || 'User'},\n\nYour OTP is: ${generatedOtp}`
+        text: `Hello ${fullName || 'User'},\n\nYour OTP for Skovio is: ${generatedOtp}\nThis OTP is valid for 10 minutes.`
     };
 
     try {
         await transporter.sendMail(mailOptions);
-        return res.status(200).json({ success: true, message: 'OTP sent successfully!' });
+        return res.status(200).json({ success: true, message: 'OTP sent successfully to your email!' });
     } catch (error) {
-        console.error('⚠️ Email Error:', error.message);
-        return res.status(200).json({ success: true, message: 'OTP generated in backend logs.' });
+        console.error('⚠️ Email Sending Error:', error.message);
+        return res.status(200).json({ success: true, message: 'OTP generated! Check backend logs or email.' });
     }
 };
 
@@ -74,7 +76,7 @@ const handleSendOtp = async (email, fullName, res, subjectText, userDoc) => {
 app.post('/api/register', async (req, res) => {
     const { fullName, email, password } = req.body;
     if (!email || !password) {
-        return res.status(400).json({ success: false, message: 'Email and password required' });
+        return res.status(400).json({ success: false, message: 'Email and password are required' });
     }
     const cleanEmail = email.toLowerCase().trim();
 
@@ -111,7 +113,7 @@ app.post('/api/resend-otp', async (req, res) => {
 // 3. FORGOT PASSWORD ROUTE
 app.post('/api/forgot-password', async (req, res) => {
     const { email } = req.body;
-    if (!email) return res.status(400).json({ success: false, message: 'Email required' });
+    if (!email) return res.status(400).json({ success: false, message: 'Email is required' });
     const cleanEmail = email.toLowerCase().trim();
 
     try {
@@ -126,7 +128,7 @@ app.post('/api/forgot-password', async (req, res) => {
 // 4. VERIFY OTP ROUTE
 app.post('/api/verify-otp', async (req, res) => {
     const { email, otp } = req.body;
-    if (!email || !otp) return res.status(400).json({ success: false, message: 'Email and OTP required' });
+    if (!email || !otp) return res.status(400).json({ success: false, message: 'Email and OTP are required' });
 
     const cleanEmail = email.toLowerCase().trim();
 
@@ -149,7 +151,7 @@ app.post('/api/verify-otp', async (req, res) => {
 // 5. LOGIN ROUTE
 app.post('/api/login', async (req, res) => {
     const { email, password } = req.body;
-    if (!email || !password) return res.status(400).json({ success: false, message: 'Email and password required' });
+    if (!email || !password) return res.status(400).json({ success: false, message: 'Email and password are required' });
 
     const cleanEmail = email.toLowerCase().trim();
     const cleanPassword = password.trim();
@@ -157,6 +159,9 @@ app.post('/api/login', async (req, res) => {
     try {
         const user = await User.findOne({ email: cleanEmail });
         if (user && user.password === cleanPassword) {
+            if (!user.isVerified) {
+                return res.status(401).json({ success: false, message: 'Account not verified. Please verify OTP first.' });
+            }
             return res.status(200).json({
                 success: true,
                 message: 'Login successful!',
