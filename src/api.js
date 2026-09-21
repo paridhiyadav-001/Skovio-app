@@ -1,7 +1,7 @@
 import axios from 'axios';
 
-// Aapka live backend URL (Render wala)
-const API_URL = 'https://skovio-backend.onrender.com/api/auth';
+// Live Render Backend URL
+const API_URL = 'https://skovio-app.onrender.com/api/auth';
 
 export const registerUser = (data) => axios.post(`${API_URL}/register`, data);
 export const verifyOTP = (data) => axios.post(`${API_URL}/verify-otp`, data);

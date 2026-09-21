@@ -1,5 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 
+// Live Render Backend Base URL
+const API_BASE_URL = 'https://skovio-app.onrender.com';
+
 export default function App() {
   // Navigation View State: 'register' | 'otp' | 'login' | 'forgot' | 'reset-otp' | 'new-password' | 'dashboard'
   const [currentView, setCurrentView] = useState('register');
@@ -82,16 +85,15 @@ export default function App() {
     if (validateRegisterForm()) {
       setLoading(true);
       try {
-       // App.jsx (line 85 ke paas)
-const response = await fetch('http://127.0.0.1:5000/api/register', {
-  method: 'POST',
-  headers: { 'Content-Type': 'application/json' },
-  body: JSON.stringify({
-    fullName: formData.fullName,
-    email: formData.email,
-    password: formData.password
-  })
-});
+        const response = await fetch(`${API_BASE_URL}/api/register`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            fullName: formData.fullName,
+            email: formData.email,
+            password: formData.password
+          })
+        });
 
         const data = await response.json();
 
@@ -144,7 +146,7 @@ const response = await fetch('http://127.0.0.1:5000/api/register', {
     if (code.length === 6) {
       setLoading(true);
       try {
-        const response = await fetch('http://localhost:5000/api/verify-otp', {
+        const response = await fetch(`${API_BASE_URL}/api/verify-otp`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -175,7 +177,7 @@ const response = await fetch('http://127.0.0.1:5000/api/register', {
     if (code.length === 6) {
       setLoading(true);
       try {
-        const response = await fetch('http://localhost:5000/api/verify-otp', {
+        const response = await fetch(`${API_BASE_URL}/api/verify-otp`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -207,7 +209,7 @@ const response = await fetch('http://127.0.0.1:5000/api/register', {
     if (loginData.email && loginData.password) {
       setLoading(true);
       try {
-        const response = await fetch('http://localhost:5000/api/login', {
+        const response = await fetch(`${API_BASE_URL}/api/login`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(loginData)
@@ -238,7 +240,7 @@ const response = await fetch('http://127.0.0.1:5000/api/register', {
     if (forgotEmail.trim()) {
       setLoading(true);
       try {
-        const response = await fetch('http://localhost:5000/api/forgot-password', {
+        const response = await fetch(`${API_BASE_URL}/api/forgot-password`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ email: forgotEmail })
@@ -269,7 +271,7 @@ const response = await fetch('http://127.0.0.1:5000/api/register', {
     if (isResetLengthValid && hasResetNumber && hasResetSpecial && isResetMatch) {
       setLoading(true);
       try {
-        const response = await fetch('http://localhost:5000/api/reset-password', {
+        const response = await fetch(`${API_BASE_URL}/api/reset-password`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -617,7 +619,7 @@ const response = await fetch('http://127.0.0.1:5000/api/register', {
           {/* Top Navbar */}
           <div style={{
             display: 'flex',
-            justifyContent: 'space-between',
+            justify: 'space-between',
             alignItems: 'center',
             background: '#ffffff',
             padding: '1rem 1.5rem',
@@ -714,7 +716,7 @@ const response = await fetch('http://127.0.0.1:5000/api/register', {
             <div style={{ background: '#ffffff', padding: '1.25rem', borderRadius: '14px', border: '1px solid #e2e8f0' }}>
               <p style={{ fontSize: '0.8125rem', fontWeight: '600', color: '#64748b' }}>LAST LOGIN</p>
               <h3 style={{ fontSize: '1.1rem', fontWeight: '700', color: '#0f172a', marginTop: '0.5rem' }}>Just Now</h3>
-              <p style={{ fontSize: '0.85rem', color: '#475569', marginTop: '0.25rem' }}>IP: 127.0.0.1 (Local Environment)</p>
+              <p style={{ fontSize: '0.85rem', color: '#475569', marginTop: '0.25rem' }}>Live Session Active</p>
             </div>
           </div>
 
